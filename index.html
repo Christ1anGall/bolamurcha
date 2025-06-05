@@ -139,7 +139,7 @@
   </div>
 
   <script>
-    // Inicializar Supabase após o carregamento do script
+    // Inicializar Supabase
     let supabase;
     if (typeof createClient !== 'undefined') {
       supabase = createClient(
@@ -381,7 +381,8 @@
       item.appendChild(chuteSelect);
       item.appendChild(passeSelect);
       item.appendChild(corridaSelect);
-      item.appendChild(def incompetentButton);
+      item.appendChild(defesaSelect);
+      item.appendChild(removeButton);
     }
 
     function skillLabel(value, type) {
