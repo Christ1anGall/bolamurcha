@@ -11,15 +11,27 @@
       background-color: #121212;
       color: #f0f0f0;
       padding: 20px;
+      max-width: 1200px;
+      margin: 0 auto;
     }
     h1 {
       color: #00e676;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    h2 {
+      color: #00e676;
+      margin-top: 20px;
+      border-bottom: 1px solid #333;
+      padding-bottom: 5px;
     }
     input, select, button {
       padding: 8px;
       margin: 5px;
       border-radius: 5px;
       border: none;
+      background-color: #333;
+      color: #fff;
     }
     input, select {
       width: 150px;
@@ -27,23 +39,29 @@
     button {
       background-color: #00e676;
       cursor: pointer;
+      font-weight: bold;
+      color: #000;
     }
     button:hover {
       background-color: #00c853;
     }
     .player-list, .teams, .waiting-list {
       margin-top: 20px;
+      background-color: #1e1e1e;
+      padding: 15px;
+      border-radius: 10px;
     }
     .team {
       background-color: #1e1e1e;
       border-radius: 10px;
-      padding: 10px;
-      margin-bottom: 10px;
+      padding: 15px;
+      margin-bottom: 15px;
       border: 2px solid #333;
     }
     .team h3 {
       color: #ffea00;
-      margin-bottom: 5px;
+      margin-bottom: 10px;
+      margin-top: 0;
     }
     .balance-ok {
       border-color: #00e676;
@@ -53,22 +71,30 @@
     }
     .total-skill {
       font-weight: bold;
-      margin-top: 5px;
+      margin-top: 10px;
+      padding-top: 5px;
+      border-top: 1px solid #333;
     }
     .player-entry {
       display: flex;
       align-items: center;
-      margin-bottom: 5px;
+      margin-bottom: 8px;
+      padding: 8px;
+      background-color: #252525;
+      border-radius: 5px;
     }
     .player-entry span {
-      margin-right: 10px;
-      width: 100px;
+      margin-right: 15px;
+      width: 120px;
+      font-weight: bold;
     }
     .skill-selector {
       margin-right: 10px;
+      width: 120px;
     }
     .remove-button {
       background-color: #ff1744;
+      color: white;
     }
     .remove-button:hover {
       background-color: #d50000;
@@ -76,8 +102,39 @@
     .status-message {
       color: #ffea00;
       margin-top: 10px;
+      padding: 10px;
+      background-color: #252525;
+      border-radius: 5px;
+      text-align: center;
     }
-    @media (max-width: 600px) {
+    .form-container {
+      background-color: #1e1e1e;
+      padding: 15px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+    }
+    .form-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .buttons-container {
+      display: flex;
+      gap: 10px;
+      margin-top: 15px;
+    }
+    ol {
+      padding-left: 20px;
+    }
+    li {
+      margin-bottom: 5px;
+    }
+    @media (max-width: 768px) {
+      .form-row {
+        flex-direction: column;
+        align-items: flex-start;
+      }
       input, select {
         width: 100%;
         margin: 5px 0;
@@ -86,55 +143,74 @@
         flex-direction: column;
         align-items: flex-start;
       }
+      .player-entry span {
+        margin-bottom: 5px;
+        width: 100%;
+      }
+      .skill-selector {
+        width: 100%;
+        margin-bottom: 5px;
+      }
+      .buttons-container {
+        flex-direction: column;
+      }
+      button {
+        width: 100%;
+      }
     }
   </style>
 </head>
 <body>
-  <h1>Sorteio de Times - Bola Murcha</h1>
-  <div>
-    <input type="text" id="playerName" placeholder="Nome do jogador" />
-    <select id="playerChute">
-      <option value="1">1 - Chute Ruim</option>
-      <option value="2" selected>2 - Chute Médio</option>
-      <option value="3">3 - Chute Bom</option>
-    </select>
-    <select id="playerPasse">
-      <option value="1">1 - Passe Ruim</option>
-      <option value="2" selected>2 - Passe Médio</option>
-      <option value="3">3 - Passe Bom</option>
-    </select>
-    <select id="playerCorrida">
-      <option value="1">1 - Corrida Ruim</option>
-      <option value="2" selected>2 - Corrida Médio</option>
-      <option value="3">3 - Corrida Bom</option>
-    </select>
-    <select id="playerDefesa">
-      <option value="1">1 - Defesa Ruim</option>
-      <option value="2" selected>2 - Defesa Médio</option>
-      <option value="3">3 - Defesa Bom</option>
-    </select>
-    <select id="playerStatus" disabled>
-      <option value="main" selected>Escalado</option>
-      <option value="waiting">Esperando</option>
-    </select>
+  <h1>⚽ Sorteio de Times - Bola Murcha ⚽</h1>
+  
+  <div class="form-container">
+    <div class="form-row">
+      <input type="text" id="playerName" placeholder="Nome do jogador" />
+      <select id="playerChute">
+        <option value="1">1 - Chute Ruim</option>
+        <option value="2" selected>2 - Chute Médio</option>
+        <option value="3">3 - Chute Bom</option>
+      </select>
+      <select id="playerPasse">
+        <option value="1">1 - Passe Ruim</option>
+        <option value="2" selected>2 - Passe Médio</option>
+        <option value="3">3 - Passe Bom</option>
+      </select>
+      <select id="playerCorrida">
+        <option value="1">1 - Corrida Ruim</option>
+        <option value="2" selected>2 - Corrida Médio</option>
+        <option value="3">3 - Corrida Bom</option>
+      </select>
+      <select id="playerDefesa">
+        <option value="1">1 - Defesa Ruim</option>
+        <option value="2" selected>2 - Defesa Médio</option>
+        <option value="3">3 - Defesa Bom</option>
+      </select>
+      <select id="playerStatus" disabled>
+        <option value="main" selected>Escalado</option>
+        <option value="waiting">Esperando</option>
+      </select>
+    </div>
     <button onclick="addPlayer()">Confirmar Presença</button>
     <div id="statusMessage" class="status-message"></div>
   </div>
 
   <div class="player-list">
-    <h2>Lista Oficial (18 primeiros)</h2>
+    <h2>👥 Lista Oficial (18 primeiros)</h2>
     <ol id="playerList"></ol>
-    <button onclick="sortTeams()">Sortear Times</button>
-    <button onclick="resetAll()">Resetar Tudo</button>
+    <div class="buttons-container">
+      <button onclick="sortTeams()">🔀 Sortear Times</button>
+      <button onclick="resetAll()">🔄 Resetar Tudo</button>
+    </div>
   </div>
 
   <div class="waiting-list">
-    <h2>Lista de Espera (5 últimos)</h2>
+    <h2>⏳ Lista de Espera (5 últimos)</h2>
     <ol id="waitingList"></ol>
   </div>
 
   <div class="teams">
-    <h2>Times Sorteados</h2>
+    <h2>🏆 Times Sorteados</h2>
     <div id="teamsOutput"></div>
   </div>
 
@@ -398,9 +474,9 @@
       const messageDiv = document.getElementById("statusMessage");
       const remainingSlots = 18 - players.length;
       if (remainingSlots > 0) {
-        messageDiv.textContent = `Ainda há ${remainingSlots} vagas na lista oficial!`;
+        messageDiv.textContent = `✅ Ainda há ${remainingSlots} vagas na lista oficial!`;
       } else {
-        messageDiv.textContent = "Lista oficial completa! Novos cadastros vão pra lista de espera.";
+        messageDiv.textContent = "⛔ Lista oficial completa! Novos cadastros vão pra lista de espera.";
       }
     }
 
@@ -479,6 +555,10 @@
     }
 
     async function resetAll() {
+      if (!confirm("Tem certeza que deseja resetar TODOS os jogadores? Esta ação não pode ser desfeita.")) {
+        return;
+      }
+      
       if (!supabase) {
         alert('Erro: Supabase não inicializado. Tente recarregar a página.');
         return;
