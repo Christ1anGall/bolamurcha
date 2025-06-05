@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Sorteio de Times de Futebol</title>
+  <title>Sorteio de Times de Futebol - Bola Murcha</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -21,7 +22,7 @@
       border: none;
     }
     input, select {
-      width: 200px;
+      width: 150px;
     }
     button {
       background-color: #00e676;
@@ -30,7 +31,7 @@
     button:hover {
       background-color: #00c853;
     }
-    .player-list, .teams {
+    .player-list, .teams, .waiting-list {
       margin-top: 20px;
     }
     .team {
@@ -61,6 +62,7 @@
     }
     .player-entry span {
       margin-right: 10px;
+      width: 100px;
     }
     .skill-selector {
       margin-right: 10px;
@@ -71,28 +73,64 @@
     .remove-button:hover {
       background-color: #d50000;
     }
+    .status-message {
+      color: #ffea00;
+      margin-top: 10px;
+    }
+    @media (max-width: 600px) {
+      input, select {
+        width: 100%;
+        margin: 5px 0;
+      }
+      .player-entry {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+    }
   </style>
 </head>
 <body>
-  <h1>Sorteio de Times - Futebol</h1>
-
+  <h1>Sorteio de Times - Bola Murcha</h1>
   <div>
     <input type="text" id="playerName" placeholder="Nome do jogador" />
-    <select id="playerSkill">
-      <option value="5">5 - Craque</option>
-      <option value="4">4 - Bom</option>
-      <option value="3" selected>3 - Médio</option>
-      <option value="2">2 - Ruim</option>
-      <option value="1">1 - Pereba</option>
+    <select id="playerChute">
+      <option value="1">1 - Chute Ruim</option>
+      <option value="2" selected>2 - Chute Médio</option>
+      <option value="3">3 - Chute Bom</option>
     </select>
-    <button onclick="addPlayer()">Adicionar Jogador</button>
+    <select id="playerPasse">
+      <option value="1">1 - Passe Ruim</option>
+      <option value="2" selected>2 - Passe Médio</option>
+      <option value="3">3 - Passe Bom</option>
+    </select>
+    <select id="playerCorrida">
+      <option value="1">1 - Corrida Ruim</option>
+      <option value="2" selected>2 - Corrida Médio</option>
+      <option value="3">3 - Corrida Bom</option>
+    </select>
+    <select id="playerDefesa">
+      <option value="1">1 - Defesa Ruim</option>
+      <option value="2" selected>2 - Defesa Médio</option>
+      <option value="3">3 - Defesa Bom</option>
+    </select>
+    <select id="playerStatus" disabled>
+      <option value="main" selected>Escalado</option>
+      <option value="waiting">Esperando</option>
+    </select>
+    <button onclick="addPlayer()">Confirmar Presença</button>
+    <div id="statusMessage" class="status-message"></div>
   </div>
 
   <div class="player-list">
-    <h2>Lista de Jogadores</h2>
+    <h2>Lista Oficial (18 primeiros)</h2>
     <ol id="playerList"></ol>
     <button onclick="sortTeams()">Sortear Times</button>
     <button onclick="resetAll()">Resetar Tudo</button>
+  </div>
+
+  <div class="waiting-list">
+    <h2>Lista de Espera (5 últimos)</h2>
+    <ol id="waitingList"></ol>
   </div>
 
   <div class="teams">
@@ -101,83 +139,279 @@
   </div>
 
   <script>
+    const supabase = Supabase.createClient(
+      'https://eujhspakunwkwblsfxnq.supabase.co',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV1amhzcGFrdW53a3dibHNmeG5xIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkxNDczOTcsImV4cCI6MjA2NDcyMzM5N30.4mxJwV3jANV8gKmmUuURqKH2isAuPjtQ3Cra8P6mH_M'
+    );
     const players = [];
+    const waitingPlayers = [];
 
-    function addPlayer() {
+    async function loadPlayers() {
+      const { data, error } = await supabase
+        .from('players')
+        .select('*')
+        .order('created_at', { ascending: true });
+      if (error) {
+        alert("Erro ao carregar jogadores: " + error.message);
+        return;
+      }
+      players.length = 0;
+      waitingPlayers.length = 0;
+      data.forEach(p => {
+        if (p.status === 'main' && players.length < 18) {
+          players.push(p);
+        } else {
+          waitingPlayers.push(p);
+        }
+      });
+      waitingPlayers.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+      if (waitingPlayers.length > 5) {
+        waitingPlayers.splice(0, waitingPlayers.length - 5);
+      }
+      renderPlayerList();
+      renderWaitingList();
+      updateStatusMessage();
+    }
+
+    async function addPlayer() {
       const name = document.getElementById("playerName").value.trim();
-      const skill = parseInt(document.getElementById("playerSkill").value);
+      const chute = parseInt(document.getElementById("playerChute").value);
+      const passe = parseInt(document.getElementById("playerPasse").value);
+      const corrida = parseInt(document.getElementById("playerCorrida").value);
+      const defesa = parseInt(document.getElementById("playerDefesa").value);
+      let status = 'main';
 
       if (!name) {
         alert("Digite o nome do jogador!");
         return;
       }
 
-      players.push({ name, skill });
+      if (localStorage.getItem('registeredPlayer')) {
+        alert("Você já confirmou presença! Cada pessoa só pode se cadastrar uma vez.");
+        return;
+      }
+
+      const { data: mainCount } = await supabase
+        .from('players')
+        .select('id', { count: 'exact' })
+        .eq('status', 'main');
+      if (mainCount.length >= 18) {
+        status = 'waiting';
+        document.getElementById("playerStatus").value = 'waiting';
+      }
+
+      const { data, error } = await supabase
+        .from('players')
+        .insert([{ name, chute, passe, corrida, defesa, status }])
+        .select();
+      if (error) {
+        alert("Erro ao confirmar presença: " + error.message);
+        return;
+      }
+
+      localStorage.setItem('registeredPlayer', data[0].id);
+      if (status === 'main' && players.length < 18) {
+        players.push(data[0]);
+      } else {
+        waitingPlayers.push(data[0]);
+        waitingPlayers.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        if (waitingPlayers.length > 5) {
+          const oldest = waitingPlayers.shift();
+          await supabase.from('players').delete().eq('id', oldest.id);
+        }
+      }
       document.getElementById("playerName").value = "";
       renderPlayerList();
+      renderWaitingList();
+      updateStatusMessage();
+    }
+
+    async function updatePlayer(index, field, value, listType) {
+      const playerList = listType === 'main' ? players : waitingPlayers;
+      const player = playerList[index];
+      let newStatus = field === 'status' ? value : player.status;
+
+      if (field === 'status' && newStatus === 'main' && players.length >= 18) {
+        alert("A lista oficial já tem 18 jogadores. Não é possível escalar mais.");
+        return;
+      }
+
+      const updateData = { [field]: field === 'status' ? newStatus : parseInt(value) };
+      const { error } = await supabase
+        .from('players')
+        .update(updateData)
+        .eq('id', player.id);
+      if (error) {
+        alert("Erro ao atualizar jogador: " + error.message);
+        return;
+      }
+
+      player[field] = field === 'status' ? newStatus : parseInt(value);
+      if (field === 'status') {
+        if (newStatus === 'main' && players.length < 18) {
+          waitingPlayers.splice(index, 1);
+          players.push(player);
+        } else if (newStatus === 'waiting') {
+          players.splice(index, 1);
+          waitingPlayers.push(player);
+          waitingPlayers.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+          if (waitingPlayers.length > 5) {
+            const oldest = waitingPlayers.shift();
+            await supabase.from('players').delete().eq('id', oldest.id);
+          }
+        }
+      }
+      renderPlayerList();
+      renderWaitingList();
+      updateStatusMessage();
+    }
+
+    async function removePlayer(index, listType) {
+      const playerList = listType === 'main' ? players : waitingPlayers;
+      const player = playerList[index];
+      const { error } = await supabase
+        .from('players')
+        .delete()
+        .eq('id', player.id);
+      if (error) {
+        alert("Erro ao remover jogador: " + error.message);
+        return;
+      }
+      if (player.id === localStorage.getItem('registeredPlayer')) {
+        localStorage.removeItem('registeredPlayer');
+      }
+      playerList.splice(index, 1);
+
+      if (listType === 'main' && players.length < 18 && waitingPlayers.length > 0) {
+        const nextPlayer = waitingPlayers[waitingPlayers.length - 1];
+        const { error: updateError } = await supabase
+          .from('players')
+          .update({ status: 'main' })
+          .eq('id', nextPlayer.id);
+        if (!updateError) {
+          waitingPlayers.pop();
+          players.push(nextPlayer);
+        }
+      }
+
+      renderPlayerList();
+      renderWaitingList();
+      updateStatusMessage();
     }
 
     function renderPlayerList() {
       const list = document.getElementById("playerList");
       list.innerHTML = "";
-
       players.forEach((player, index) => {
         const item = document.createElement("li");
         item.className = "player-entry";
-
-        const nameSpan = document.createElement("span");
-        nameSpan.textContent = player.name;
-
-        const skillSelect = document.createElement("select");
-        skillSelect.className = "skill-selector";
-        [5, 4, 3, 2, 1].forEach(s => {
-          const option = document.createElement("option");
-          option.value = s;
-          option.text = `${s} ${skillLabel(s)}`;
-          if (player.skill === s) option.selected = true;
-          skillSelect.appendChild(option);
-        });
-        skillSelect.onchange = () => {
-          player.skill = parseInt(skillSelect.value);
-        };
-
-        const removeButton = document.createElement("button");
-        removeButton.textContent = "Remover";
-        removeButton.className = "remove-button";
-        removeButton.onclick = () => {
-          players.splice(index, 1);
-          renderPlayerList();
-        };
-
-        item.appendChild(nameSpan);
-        item.appendChild(skillSelect);
-        item.appendChild(removeButton);
-
+        renderPlayerItem(item, player, index, 'main');
         list.appendChild(item);
       });
     }
 
-    function skillLabel(skill) {
-      switch (skill) {
-        case 5: return "- Craque";
-        case 4: return "- Bom";
-        case 3: return "- Médio";
-        case 2: return "- Ruim";
-        case 1: return "- Pereba";
-        default: return "";
+    function renderWaitingList() {
+      const list = document.getElementById("waitingList");
+      list.innerHTML = "";
+      waitingPlayers.forEach((player, index) => {
+        const item = document.createElement("li");
+        item.className = "player-entry";
+        renderPlayerItem(item, player, index, 'waiting');
+        list.appendChild(item);
+      });
+    }
+
+    function renderPlayerItem(item, player, index, listType) {
+      const nameSpan = document.createElement("span");
+      nameSpan.textContent = player.name;
+
+      const chuteSelect = document.createElement("select");
+      chuteSelect.className = "skill-selector";
+      [1, 2, 3].forEach(s => {
+        const option = document.createElement("option");
+        option.value = s;
+        option.text = `${s} - ${skillLabel(s, 'chute')}`;
+        if (player.chute === s) option.selected = true;
+        chuteSelect.appendChild(option);
+      });
+      chuteSelect.onchange = () => updatePlayer(index, 'chute', chuteSelect.value, listType);
+
+      const passeSelect = document.createElement("select");
+      passeSelect.className = "skill-selector";
+      [1, 2, 3].forEach(s => {
+        const option = document.createElement("option");
+        option.value = s;
+        option.text = `${s} - ${skillLabel(s, 'passe')}`;
+        if (player.passe === s) option.selected = true;
+        passeSelect.appendChild(option);
+      });
+      passeSelect.onchange = () => updatePlayer(index, 'passe', passeSelect.value, listType);
+
+      const corridaSelect = document.createElement("select");
+      corridaSelect.className = "skill-selector";
+      [1, 2, 3].forEach(s => {
+        const option = document.createElement("option");
+        option.value = s;
+        option.text = `${s} - ${skillLabel(s, 'corrida')}`;
+        if (player.corrida === s) option.selected = true;
+        corridaSelect.appendChild(option);
+      });
+      corridaSelect.onchange = () => updatePlayer(index, 'corrida', corridaSelect.value, listType);
+
+      const defesaSelect = document.createElement("select");
+      defesaSelect.className = "skill-selector";
+      [1, 2, 3].forEach(s => {
+        const option = document.createElement("option");
+        option.value = s;
+        option.text = `${s} - ${skillLabel(s, 'defesa')}`;
+        if (player.defesa === s) option.selected = true;
+        defesaSelect.appendChild(option);
+      });
+      defesaSelect.onchange = () => updatePlayer(index, 'defesa', defesaSelect.value, listType);
+
+      const removeButton = document.createElement("button");
+      removeButton.textContent = "Remover";
+      removeButton.className = "remove-button";
+      removeButton.onclick = () => removePlayer(index, listType);
+
+      item.appendChild(nameSpan);
+      item.appendChild(chuteSelect);
+      item.appendChild(passeSelect);
+      item.appendChild(corridaSelect);
+      item.appendChild(defesaSelect);
+      item.appendChild(removeButton);
+    }
+
+    function skillLabel(value, type) {
+      switch (parseInt(value)) {
+        case 3: return type === 'chute' ? 'Chute Bom' : type === 'passe' ? 'Passe Bom' : type === 'corrida' ? 'Corrida Boa' : 'Defesa Boa';
+        case 2: return type === 'chute' ? 'Chute Médio' : type === 'passe' ? 'Passe Médio' : type === 'corrida' ? 'Corrida Média' : 'Defesa Média';
+        case 1: return type === 'chute' ? 'Chute Ruim' : type === 'passe' ? 'Passe Ruim' : type === 'corrida' ? 'Corrida Ruim' : 'Defesa Ruim';
+        default: return '';
+      }
+    }
+
+    function updateStatusMessage() {
+      const messageDiv = document.getElementById("statusMessage");
+      const remainingSlots = 18 - players.length;
+      if (remainingSlots > 0) {
+        messageDiv.textContent = `Ainda há ${remainingSlots} vagas na lista oficial!`;
+      } else {
+        messageDiv.textContent = "Lista oficial completa! Novos cadastros vão pra lista de espera.";
       }
     }
 
     function sortTeams() {
       if (players.length < 3) {
-        alert("Adicione pelo menos 3 jogadores.");
+        alert("A lista oficial precisa de pelo menos 3 jogadores para sortear.");
         return;
       }
 
       const grouped = {};
       players.forEach(p => {
-        if (!grouped[p.skill]) grouped[p.skill] = [];
-        grouped[p.skill].push(p);
+        const totalSkill = p.chute + p.passe + p.corrida + p.defesa;
+        if (!grouped[totalSkill]) grouped[totalSkill] = [];
+        grouped[totalSkill].push(p);
       });
 
       Object.keys(grouped).forEach(key => {
@@ -204,7 +438,7 @@
       output.innerHTML = "";
 
       const totals = teams.map(team => 
-        team.reduce((sum, p) => sum + p.skill, 0)
+        team.reduce((sum, p) => sum + p.chute + p.passe + p.corrida + p.defesa, 0)
       );
 
       const max = Math.max(...totals);
@@ -220,7 +454,7 @@
         div.innerHTML = `
           <h3>Time ${index + 1}</h3>
           <ul>
-            ${team.map(p => `<li>${p.name} (Nota: ${p.skill})</li>`).join("")}
+            ${team.map(p => `<li>${p.name} (Chute: ${p.chute}, Passe: ${p.passe}, Corrida: ${p.corrida}, Defesa: ${p.defesa})</li>`).join("")}
           </ul>
           <div class="total-skill">Total de Habilidade: ${totalSkill}</div>
         `;
@@ -241,11 +475,22 @@
       return array;
     }
 
-    function resetAll() {
+    async function resetAll() {
+      const { error } = await supabase.from('players').delete().neq('id', null);
+      if (error) {
+        alert("Erro ao resetar: " + error.message);
+        return;
+      }
+      localStorage.removeItem('registeredPlayer');
       players.length = 0;
+      waitingPlayers.length = 0;
       document.getElementById("playerList").innerHTML = "";
+      document.getElementById("waitingList").innerHTML = "";
       document.getElementById("teamsOutput").innerHTML = "";
+      updateStatusMessage();
     }
+
+    window.onload = loadPlayers;
   </script>
 </body>
 </html>
