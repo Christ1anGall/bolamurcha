@@ -38,12 +38,24 @@
       border-radius: 10px;
       padding: 10px;
       margin-bottom: 10px;
+      border: 2px solid #333;
     }
     .team h3 {
       color: #ffea00;
+      margin-bottom: 5px;
+    }
+    .balance-ok {
+      border-color: #00e676;
+    }
+    .balance-bad {
+      border-color: #ff1744;
     }
     .player-entry {
       margin-bottom: 5px;
+    }
+    .total-skill {
+      font-weight: bold;
+      margin-top: 5px;
     }
   </style>
 </head>
@@ -94,7 +106,7 @@
     function renderPlayerList() {
       const list = document.getElementById("playerList");
       list.innerHTML = "";
-      players.forEach((player, index) => {
+      players.forEach((player) => {
         const item = document.createElement("li");
         item.innerHTML = `${player.name} - Nota: ${player.skill}`;
         list.appendChild(item);
@@ -113,7 +125,6 @@
         grouped[p.skill].push(p);
       });
 
-      // Embaralhar cada grupo de nota
       Object.keys(grouped).forEach(key => {
         grouped[key] = shuffleArray(grouped[key]);
       });
@@ -137,14 +148,34 @@
       const output = document.getElementById("teamsOutput");
       output.innerHTML = "";
 
+      const totals = teams.map(team => 
+        team.reduce((sum, p) => sum + p.skill, 0)
+      );
+
+      const max = Math.max(...totals);
+      const min = Math.min(...totals);
+      const isBalanced = (max - min) <= 2;
+
       teams.forEach((team, index) => {
         const div = document.createElement("div");
-        div.className = "team";
-        div.innerHTML = `<h3>Time ${index + 1}</h3><ul>${
-          team.map(p => `<li>${p.name} (Nota: ${p.skill})</li>`).join("")
-        }</ul>`;
+        div.className = "team " + (isBalanced ? "balance-ok" : "balance-bad");
+
+        const totalSkill = totals[index];
+
+        div.innerHTML = `
+          <h3>Time ${index + 1}</h3>
+          <ul>
+            ${team.map(p => `<li>${p.name} (Nota: ${p.skill})</li>`).join("")}
+          </ul>
+          <div class="total-skill">Total de Habilidade: ${totalSkill}</div>
+        `;
+
         output.appendChild(div);
       });
+
+      if (!isBalanced) {
+        alert("⚠️ Os times estão desbalanceados! Reveja as notas ou ajuste manualmente.");
+      }
     }
 
     function shuffleArray(array) {
