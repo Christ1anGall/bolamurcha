@@ -12,7 +12,7 @@ jobs:
       - name: Call Supabase RPC to delete old players
         uses: actions/http-client@v2
         with:
-          url: https://eujhspakunwkwblsfxnq.supabase.co/rest/v1/rpc/delete_old_players
+          url: ${{ secrets.SUPABASE_URL }} 
           method: POST
           headers: |
             apikey: ${{ secrets.SUPABASE_ANON_KEY }}
