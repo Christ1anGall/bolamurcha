@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Sorteio de Times de Futebol - Bola Murcha</title>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -139,14 +139,25 @@
   </div>
 
   <script>
-    const supabase = Supabase.createClient(
-      'https://eujhspakunwkwblsfxnq.supabase.co',
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV1amhzcGFrdW53a3dibHNmeG5xIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkxNDczOTcsImV4cCI6MjA2NDcyMzM5N30.4mxJwV3jANV8gKmmUuURqKH2isAuPjtQ3Cra8P6mH_M'
-    );
+    // Inicializar Supabase após o carregamento do script
+    let supabase;
+    if (typeof createClient !== 'undefined') {
+      supabase = createClient(
+        'https://eujhspakunwkwblsfxnq.supabase.co',
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV1amhzcGFrdW53a3dibHNmeG5xIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDkxNDczOTcsImV4cCI6MjA2NDcyMzM5N30.4mxJwV3jANV8gKmmUuURqKH2isAuPjtQ3Cra8P6mH_M'
+      );
+    } else {
+      console.error('Supabase SDK não carregado. Verifique o script CDN.');
+    }
+
     const players = [];
     const waitingPlayers = [];
 
     async function loadPlayers() {
+      if (!supabase) {
+        alert('Erro: Supabase não inicializado. Tente recarregar a página.');
+        return;
+      }
       const { data, error } = await supabase
         .from('players')
         .select('*')
@@ -174,6 +185,10 @@
     }
 
     async function addPlayer() {
+      if (!supabase) {
+        alert('Erro: Supabase não inicializado. Tente recarregar a página.');
+        return;
+      }
       const name = document.getElementById("playerName").value.trim();
       const chute = parseInt(document.getElementById("playerChute").value);
       const passe = parseInt(document.getElementById("playerPasse").value);
@@ -227,16 +242,14 @@
     }
 
     async function updatePlayer(index, field, value, listType) {
-      const playerList = listType === 'main' ? players : waitingPlayers;
-      const player = playerList[index];
-      let newStatus = field === 'status' ? value : player.status;
-
-      if (field === 'status' && newStatus === 'main' && players.length >= 18) {
-        alert("A lista oficial já tem 18 jogadores. Não é possível escalar mais.");
+      if (!supabase) {
+        alert('Erro: Supabase não inicializado. Tente recarregar a página.');
         return;
       }
+      const playerList = listType === 'main' ? players : waitingPlayers;
+      const player = playerList[index];
 
-      const updateData = { [field]: field === 'status' ? newStatus : parseInt(value) };
+      const updateData = { [field]: parseInt(value) };
       const { error } = await supabase
         .from('players')
         .update(updateData)
@@ -246,27 +259,17 @@
         return;
       }
 
-      player[field] = field === 'status' ? newStatus : parseInt(value);
-      if (field === 'status') {
-        if (newStatus === 'main' && players.length < 18) {
-          waitingPlayers.splice(index, 1);
-          players.push(player);
-        } else if (newStatus === 'waiting') {
-          players.splice(index, 1);
-          waitingPlayers.push(player);
-          waitingPlayers.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-          if (waitingPlayers.length > 5) {
-            const oldest = waitingPlayers.shift();
-            await supabase.from('players').delete().eq('id', oldest.id);
-          }
-        }
-      }
+      player[field] = parseInt(value);
       renderPlayerList();
       renderWaitingList();
       updateStatusMessage();
     }
 
     async function removePlayer(index, listType) {
+      if (!supabase) {
+        alert('Erro: Supabase não inicializado. Tente recarregar a página.');
+        return;
+      }
       const playerList = listType === 'main' ? players : waitingPlayers;
       const player = playerList[index];
       const { error } = await supabase
@@ -378,8 +381,7 @@
       item.appendChild(chuteSelect);
       item.appendChild(passeSelect);
       item.appendChild(corridaSelect);
-      item.appendChild(defesaSelect);
-      item.appendChild(removeButton);
+      item.appendChild(def incompetentButton);
     }
 
     function skillLabel(value, type) {
@@ -476,6 +478,10 @@
     }
 
     async function resetAll() {
+      if (!supabase) {
+        alert('Erro: Supabase não inicializado. Tente recarregar a página.');
+        return;
+      }
       const { error } = await supabase.from('players').delete().neq('id', null);
       if (error) {
         alert("Erro ao resetar: " + error.message);
@@ -490,7 +496,13 @@
       updateStatusMessage();
     }
 
-    window.onload = loadPlayers;
+    window.onload = () => {
+      if (typeof createClient === 'undefined') {
+        alert('Erro: Supabase SDK não carregado. Verifique sua conexão ou tente novamente.');
+      } else {
+        loadPlayers();
+      }
+    };
   </script>
 </body>
 </html>
