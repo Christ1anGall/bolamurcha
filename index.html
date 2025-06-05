@@ -4,7 +4,14 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Sorteio de Times de Futebol - Bola Murcha</title>
+  <!-- CDN principal do Supabase -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+  <!-- Fallback para unpkg -->
+  <script>
+    if (typeof createClient === 'undefined') {
+      document.write('<script src="https://unpkg.com/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"><\/script>');
+    }
+  </script>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -148,6 +155,7 @@
       );
     } else {
       console.error('Supabase SDK não carregado. Verifique o script CDN.');
+      alert('Erro: Supabase SDK não carregado. Tente recarregar a página.');
     }
 
     const players = [];
