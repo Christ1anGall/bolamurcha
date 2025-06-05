@@ -50,12 +50,26 @@
     .balance-bad {
       border-color: #ff1744;
     }
-    .player-entry {
-      margin-bottom: 5px;
-    }
     .total-skill {
       font-weight: bold;
       margin-top: 5px;
+    }
+    .player-entry {
+      display: flex;
+      align-items: center;
+      margin-bottom: 5px;
+    }
+    .player-entry span {
+      margin-right: 10px;
+    }
+    .skill-selector {
+      margin-right: 10px;
+    }
+    .remove-button {
+      background-color: #ff1744;
+    }
+    .remove-button:hover {
+      background-color: #d50000;
     }
   </style>
 </head>
@@ -106,11 +120,52 @@
     function renderPlayerList() {
       const list = document.getElementById("playerList");
       list.innerHTML = "";
-      players.forEach((player) => {
+
+      players.forEach((player, index) => {
         const item = document.createElement("li");
-        item.innerHTML = `${player.name} - Nota: ${player.skill}`;
+        item.className = "player-entry";
+
+        const nameSpan = document.createElement("span");
+        nameSpan.textContent = player.name;
+
+        const skillSelect = document.createElement("select");
+        skillSelect.className = "skill-selector";
+        [5, 4, 3, 2, 1].forEach(s => {
+          const option = document.createElement("option");
+          option.value = s;
+          option.text = `${s} ${skillLabel(s)}`;
+          if (player.skill === s) option.selected = true;
+          skillSelect.appendChild(option);
+        });
+        skillSelect.onchange = () => {
+          player.skill = parseInt(skillSelect.value);
+        };
+
+        const removeButton = document.createElement("button");
+        removeButton.textContent = "Remover";
+        removeButton.className = "remove-button";
+        removeButton.onclick = () => {
+          players.splice(index, 1);
+          renderPlayerList();
+        };
+
+        item.appendChild(nameSpan);
+        item.appendChild(skillSelect);
+        item.appendChild(removeButton);
+
         list.appendChild(item);
       });
+    }
+
+    function skillLabel(skill) {
+      switch (skill) {
+        case 5: return "- Craque";
+        case 4: return "- Bom";
+        case 3: return "- Médio";
+        case 2: return "- Ruim";
+        case 1: return "- Pereba";
+        default: return "";
+      }
     }
 
     function sortTeams() {
