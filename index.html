@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sorteio de Times de Futebol</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #121212;
+      color: #f0f0f0;
+      padding: 20px;
+    }
+    h1 {
+      color: #00e676;
+    }
+    input, select, button {
+      padding: 8px;
+      margin: 5px;
+      border-radius: 5px;
+      border: none;
+    }
+    input, select {
+      width: 200px;
+    }
+    button {
+      background-color: #00e676;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #00c853;
+    }
+    .player-list, .teams {
+      margin-top: 20px;
+    }
+    .team {
+      background-color: #1e1e1e;
+      border-radius: 10px;
+      padding: 10px;
+      margin-bottom: 10px;
+    }
+    .team h3 {
+      color: #ffea00;
+    }
+    .player-entry {
+      margin-bottom: 5px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Sorteio de Times - Futebol</h1>
+
+  <div>
+    <input type="text" id="playerName" placeholder="Nome do jogador" />
+    <select id="playerSkill">
+      <option value="5">5 - Craque</option>
+      <option value="4">4 - Bom</option>
+      <option value="3" selected>3 - Médio</option>
+      <option value="2">2 - Ruim</option>
+      <option value="1">1 - Pereba</option>
+    </select>
+    <button onclick="addPlayer()">Adicionar Jogador</button>
+  </div>
+
+  <div class="player-list">
+    <h2>Lista de Jogadores</h2>
+    <ol id="playerList"></ol>
+    <button onclick="sortTeams()">Sortear Times</button>
+    <button onclick="resetAll()">Resetar Tudo</button>
+  </div>
+
+  <div class="teams">
+    <h2>Times Sorteados</h2>
+    <div id="teamsOutput"></div>
+  </div>
+
+  <script>
+    const players = [];
+
+    function addPlayer() {
+      const name = document.getElementById("playerName").value.trim();
+      const skill = parseInt(document.getElementById("playerSkill").value);
+
+      if (!name) {
+        alert("Digite o nome do jogador!");
+        return;
+      }
+
+      players.push({ name, skill });
+      document.getElementById("playerName").value = "";
+      renderPlayerList();
+    }
+
+    function renderPlayerList() {
+      const list = document.getElementById("playerList");
+      list.innerHTML = "";
+      players.forEach((player, index) => {
+        const item = document.createElement("li");
+        item.innerHTML = `${player.name} - Nota: ${player.skill}`;
+        list.appendChild(item);
+      });
+    }
+
+    function sortTeams() {
+      if (players.length < 3) {
+        alert("Adicione pelo menos 3 jogadores.");
+        return;
+      }
+
+      const grouped = {};
+      players.forEach(p => {
+        if (!grouped[p.skill]) grouped[p.skill] = [];
+        grouped[p.skill].push(p);
+      });
+
+      // Embaralhar cada grupo de nota
+      Object.keys(grouped).forEach(key => {
+        grouped[key] = shuffleArray(grouped[key]);
+      });
+
+      const teams = [[], [], []];
+      let teamIndex = 0;
+
+      const skillsSorted = Object.keys(grouped).sort((a, b) => b - a);
+      skillsSorted.forEach(skill => {
+        const group = grouped[skill];
+        group.forEach(player => {
+          teams[teamIndex].push(player);
+          teamIndex = (teamIndex + 1) % 3;
+        });
+      });
+
+      renderTeams(teams);
+    }
+
+    function renderTeams(teams) {
+      const output = document.getElementById("teamsOutput");
+      output.innerHTML = "";
+
+      teams.forEach((team, index) => {
+        const div = document.createElement("div");
+        div.className = "team";
+        div.innerHTML = `<h3>Time ${index + 1}</h3><ul>${
+          team.map(p => `<li>${p.name} (Nota: ${p.skill})</li>`).join("")
+        }</ul>`;
+        output.appendChild(div);
+      });
+    }
+
+    function shuffleArray(array) {
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+      return array;
+    }
+
+    function resetAll() {
+      players.length = 0;
+      document.getElementById("playerList").innerHTML = "";
+      document.getElementById("teamsOutput").innerHTML = "";
+    }
+  </script>
+</body>
+</html>
